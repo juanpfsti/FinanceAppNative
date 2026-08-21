@@ -142,7 +142,7 @@ export default function AddTransaction() {
 
         promises.push(
           addTransaction({
-            userId: user!.id,
+            userId: user?.id || 'local_user',
             type: type === 'expense' ? 'despesa' : 'receita',
             title: txTitle,
             amount: amountPerInstallment,

@@ -196,10 +196,10 @@ export default function Profile() {
       const confirmDelete = window.confirm(confirmMsg);
       if (confirmDelete) {
         void deleteAccount().then(() => {
-          router.replace('/(auth)/login');
-          Alert.alert(t('success'), t('alertDeleteSuccess'));
+          setPrivacyVisible(false);
+          router.replace('/(tabs)');
         }).catch(() => {
-          Alert.alert(t('error'), user?.language === 'en' ? 'Could not delete account. Reauthenticate and try again.' : 'Não foi possível excluir a conta. Faça login novamente e tente.');
+          Alert.alert(t('error'), user?.language === 'en' ? 'Could not delete account.' : 'Não foi possível excluir os dados.');
         });
       }
     } else {
@@ -208,10 +208,10 @@ export default function Profile() {
         { text: t('delete'), style: 'destructive', onPress: async () => {
           try {
             await deleteAccount();
-            router.replace('/(auth)/login');
-            Alert.alert(t('success'), t('alertDeleteSuccess'));
+            setPrivacyVisible(false);
+            router.replace('/(tabs)');
           } catch {
-            Alert.alert(t('error'), 'Não foi possível excluir a conta.');
+            Alert.alert(t('error'), 'Não foi possível excluir os dados.');
           }
         }}
       ]);
@@ -228,13 +228,16 @@ export default function Profile() {
       const confirmLogout = window.confirm(confirmMsg);
       if (confirmLogout) {
         void logout().then(() => {
-          router.replace('/(auth)/login');
+          router.replace('/(tabs)');
         });
       }
     } else {
       Alert.alert(confirmTitle, confirmMsg, [
         { text: t('cancel'), style: 'cancel' },
-        { text: confirmTitle, style: 'destructive', onPress: async () => { await logout(); router.replace('/(auth)/login'); } }
+        { text: confirmTitle, style: 'destructive', onPress: async () => { 
+          await logout(); 
+          router.replace('/(tabs)');
+        }}
       ]);
     }
   };

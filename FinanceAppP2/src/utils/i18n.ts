@@ -154,8 +154,8 @@ export const translations = {
 };
 
 export const useTranslation = () => {
-  const user = useAuthStore((state) => state.user);
-  const lang = (user?.language === 'en' ? 'en' : 'pt') as 'pt' | 'en';
+  const language = useAuthStore((state) => state.user.language);
+  const lang = (language === 'en' ? 'en' : 'pt') as 'pt' | 'en';
 
   const t = (key: keyof typeof translations['pt']) => {
     return translations[lang][key] || translations['pt'][key] || key;

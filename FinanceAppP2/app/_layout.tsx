@@ -1,8 +1,7 @@
-import { useEffect } from 'react';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import React from 'react';
+import { Stack } from 'expo-router';
 import { Provider as PaperProvider, MD3LightTheme, MD3DarkTheme } from 'react-native-paper';
-import { useColorScheme, View, ActivityIndicator, SafeAreaView, Platform } from 'react-native';
-import { useAuthStore } from '../src/store/useAuthStore';
+import { useColorScheme, SafeAreaView, Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 // Ouvinte do evento de instalação do PWA (para navegadores baseados no Chromium)
@@ -11,6 +10,16 @@ if (Platform.OS === 'web' && typeof window !== 'undefined') {
     e.preventDefault();
     (window as any).deferredPrompt = e;
   });
+
+  // Desregistrar Service Workers antigos que podem estar em loop de cache
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+      for (let registration of registrations) {
+        registration.unregister();
+        console.log('ServiceWorker desregistrado com sucesso.');
+      }
+    });
+  }
 }
 
 // Cores personalizadas para o tema (mantendo MD3 mas customizando)
@@ -47,41 +56,8 @@ const darkTheme = {
 };
 
 export default function RootLayout() {
-  const { user, isLoading, checkSession } = useAuthStore();
-  const segments = useSegments();
-  const router = useRouter();
   const colorScheme = useColorScheme();
-
-  // 1. Tenta recuperar a sessão ao abrir o app
-  useEffect(() => {
-    checkSession();
-  }, []);
-
-  // 2. Monitora o estado de autenticação e redireciona
-  useEffect(() => {
-    if (isLoading) return;
-
-    const inAuthGroup = segments[0] === '(auth)';
-
-    if (!user && !inAuthGroup) {
-      // Sem usuário e fora da tela de login -> Vai para o Login
-      router.replace('/(auth)/login');
-    } else if (user && (inAuthGroup || segments.length === 1)) {
-      // Logado e tentando ir pro login ou raiz -> Vai para o Dashboard
-      router.replace('/(tabs)');
-    }
-  }, [user, isLoading, segments]);
-
   const theme = colorScheme === 'dark' ? darkTheme : lightTheme;
-
-  // Tela de loading mais bonita
-  if (isLoading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background }}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
-    );
-  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -117,7 +93,6 @@ export default function RootLayout() {
               headerShown: false,
             }}
           >
-            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           </Stack>
         </SafeAreaView>

@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { Storage } from '../utils/storage';
-import { firebaseTransactionApi, isFirebaseConfigured, type StoredTransaction } from '../services/firebase';
 
 export interface Transaction {
   id: string;
@@ -31,17 +30,11 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
   loadTransactions: async (userId) => {
     set({ isLoading: true });
     try {
-      if (isFirebaseConfigured && userId) {
-        const data = await firebaseTransactionApi.listTransactions(userId);
-        set({ transactions: data as Transaction[] });
-        return;
-      }
-
       const data = await Storage.getItem('@transactions');
       if (data) {
         const parsed = JSON.parse(data);
         const transactions = Array.isArray(parsed) ? parsed : [];
-        set({ transactions: userId ? transactions.filter((transaction: Transaction) => transaction.userId === userId) : transactions });
+        set({ transactions: transactions });
       } else {
         set({ transactions: [] });
       }
@@ -56,19 +49,6 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
   addTransaction: async (tx) => {
     set({ isLoading: true });
     try {
-      if (isFirebaseConfigured) {
-        console.log('[FinanceStore] Firebase configurado, tentando criar transação...', {
-          userId: tx.userId,
-          type: tx.type,
-          title: tx.title,
-          amount: tx.amount,
-        });
-        const createdTransaction = await firebaseTransactionApi.createTransaction(tx as Omit<StoredTransaction, 'id'>);
-        console.log('[FinanceStore] Transação criada com sucesso:', createdTransaction.id);
-        set({ transactions: [createdTransaction as Transaction, ...get().transactions] });
-        return Promise.resolve();
-      }
-
       const newTx: Transaction = { ...tx, id: Date.now().toString() };
       const currentTransactions = get().transactions;
       const updated = [newTx, ...currentTransactions];
@@ -77,8 +57,6 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
       return Promise.resolve();
     } catch (error: any) {
       console.error('[FinanceStore] Erro ao adicionar transação:', error);
-      console.error('[FinanceStore] Código do erro:', error?.code);
-      console.error('[FinanceStore] Mensagem:', error?.message);
       return Promise.reject(error);
     } finally {
       set({ isLoading: false });
@@ -88,15 +66,6 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
   updateTransaction: async (id, updatedData) => {
     set({ isLoading: true });
     try {
-      if (isFirebaseConfigured) {
-        await firebaseTransactionApi.updateTransaction(id, updatedData as Partial<StoredTransaction>);
-        const updatedTransactions = get().transactions.map((transaction) =>
-          transaction.id === id ? { ...transaction, ...updatedData } : transaction,
-        );
-        set({ transactions: updatedTransactions });
-        return Promise.resolve();
-      }
-
       const currentTransactions = get().transactions;
       const updatedTransactions = currentTransactions.map((transaction) =>
         transaction.id === id ? { ...transaction, ...updatedData } : transaction
@@ -115,16 +84,6 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
   deleteTransaction: async (id) => {
     set({ isLoading: true });
     try {
-      if (isFirebaseConfigured) {
-        const transactionToDelete = get().transactions.find((transaction) => transaction.id === id);
-        if (transactionToDelete) {
-          await firebaseTransactionApi.deleteTransaction(transactionToDelete as StoredTransaction);
-        }
-        const updated = get().transactions.filter(t => t.id !== id);
-        set({ transactions: updated });
-        return Promise.resolve();
-      }
-
       const currentTransactions = get().transactions;
       const updated = currentTransactions.filter(t => t.id !== id);
       set({ transactions: updated });

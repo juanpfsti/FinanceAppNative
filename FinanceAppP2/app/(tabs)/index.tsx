@@ -94,7 +94,7 @@ export default function Dashboard() {
         }
       }
     }
-  }, [user]);
+  }, []);
 
   const handleClosePwa = () => {
     setPwaModalVisible(false);
@@ -108,11 +108,14 @@ export default function Dashboard() {
   const deleteModalAnim = useState(new Animated.Value(0))[0];
 
   useEffect(() => {
-    fetchWeather();
-    if (user?.id) {
-      loadTransactions(user.id);
-    }
-  }, [user?.id]);
+    const init = async () => {
+      await useAuthStore.getState().initSession();
+      const currentUser = useAuthStore.getState().user;
+      fetchWeather();
+      loadTransactions(currentUser.id);
+    };
+    init();
+  }, []);
 
   useEffect(() => {
     if (actionModalVisible) {
@@ -177,7 +180,7 @@ export default function Dashboard() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadTransactions(user?.id);
+    await loadTransactions(user.id);
     await fetchWeather();
     setRefreshing(false);
   };
@@ -245,7 +248,7 @@ export default function Dashboard() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       try {
         await deleteTransaction(selectedTransaction.id);
-        await loadTransactions(user?.id);
+        await loadTransactions(user.id);
         setSelectedTransaction(null);
       } catch (error) {
         Alert.alert('Erro', 'Não foi possível excluir o lançamento');
@@ -255,7 +258,7 @@ export default function Dashboard() {
 
   const handleSaveEdit = async (id: string, updatedData: any) => {
     await updateTransaction(id, updatedData);
-    await loadTransactions(user?.id);
+    await loadTransactions(user.id);
     setEditModalVisible(false);
     setSelectedTransaction(null);
   };
